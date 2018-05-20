@@ -4,46 +4,69 @@
 ludo_player_ga::ludo_player_ga():
     pos_start_of_turn(16),
     pos_end_of_turn(16),
+    rd(),
+    gen(rd()),
     dice_roll(0),
 	q_table{}	// initialize q-table with zeros
 {
+	for(int i = 0; i < 4; i++) oldState.push_back(PlayerState::home); // Initialize oldState with home-positions
 }
 
-int ludo_player_ga::make_decision(){
-    /*
+int ludo_player_ga::make_decision(std::vector<PlayerState> current){
+    if(useTrainedQTable){
+    	double qMax = q_table[current[0]][current[1]][current[2]][current[3]][0];
+    	int indexOfQMax = 0;
+    	for(int i = 1; i < 4; i++){
+			if(q_table[current[0]][current[1]][current[2]][current[3]][i] > qMax){
+			 qMax = q_table[current[0]][current[1]][current[2]][current[3]][i];
+			 indexOfQMax = i;
+			}
+		}
+		return indexOfQMax;
+
+    }
+    // else do random action selection
+    std::vector<int> valid_moves;
     if(dice_roll == 6){
         for(int i = 0; i < 4; ++i){
             if(pos_start_of_turn[i]<0){
-                return i;
-            }
-        }
-        for(int i = 0; i < 4; ++i){
-            if(pos_start_of_turn[i]>=0 && pos_start_of_turn[i] != 99){
-                return i;
-            }
-        }
-    } else {
-        for(int i = 0; i < 4; ++i){
-            if(pos_start_of_turn[i]>=0 && pos_start_of_turn[i] != 99){
-                return i;
-            }
-        }
-        for(int i = 0; i < 4; ++i){ //maybe they are all locked in
-            if(pos_start_of_turn[i]<0){
-                return i;
+                valid_moves.push_back(i);
             }
         }
     }
-    */
-    return 1;
+    for(int i = 0; i < 4; ++i){
+        if(pos_start_of_turn[i]>=0 && pos_start_of_turn[i] != 99){
+            valid_moves.push_back(i);
+        }
+    }
+    if(valid_moves.size()==0){
+        for(int i = 0; i < 4; ++i){
+            if(pos_start_of_turn[i] != 99){
+                valid_moves.push_back(i);
+            }
+        }
+    }
+    std::uniform_int_distribution<> piece(0, valid_moves.size()-1);
+    int select = piece(gen);
+    return valid_moves[select];
+   
 }
 
 void ludo_player_ga::start_turn(positions_and_dice relative){
     pos_start_of_turn = relative.pos;
     dice_roll = relative.dice;
-	printSummary(relative);
-	measureState(relative);
-    int decision = make_decision();
+
+	//printSummary(relative);
+	std::vector<ludo_player_ga::PlayerState> currentState = measureState(relative);
+
+	double reward = calculateReward(oldState, currentState);
+	updateQTable(reward, oldState, currentState);
+	
+    int decision = make_decision(currentState); // random if in learning mode
+    updateRewardForNextIteration(currentState, decision);
+
+    oldDecision = decision;
+    oldState = currentState;
     emit select_piece(decision);
 }
 
@@ -189,13 +212,13 @@ std::vector<ludo_player_ga::PlayerState> ludo_player_ga::measureState(positions_
 
 	}
 
-
+/*
 	std::cout << "CurrentState: ";  
 	for(unsigned int i = 0; i < currentState.size(); ++i){
     	std::cout << currentState[i] << " " ;    
 	}
 	std::cout << " End CurrentState" << std::endl;
-
+*/
 	return currentState;
 }
 
@@ -334,4 +357,104 @@ bool ludo_player_ga::isPositionSafe(int isThisPositionSafe, std::vector<int> pos
 	}	
 	return true;
 }
+
+
+
+
+double ludo_player_ga::calculateReward(std::vector<PlayerState> old, std::vector<PlayerState> current){
+	double reward = rewardForNextIteration;
+	int end_position_count_old = 0;
+	int end_position_count_current = 0;
+	int house_position_count_old = 0;
+	int house_position_count_current = 0;
+	int home_position_count_old = 0;
+	int home_position_count_current = 0;
+	for(int i = 0; i < 4; i++){
+		if(old[i] == PlayerState::end_position) end_position_count_old ++;
+		if(old[i] == PlayerState::house) house_position_count_old ++;
+		if(old[i] == PlayerState::home) home_position_count_old ++;
+
+		if(current[i] == PlayerState::end_position) end_position_count_current ++;
+		if(current[i] == PlayerState::house) house_position_count_current ++;
+		if(current[i] == PlayerState::home) home_position_count_current ++;
+	}
+
+	if(end_position_count_current > end_position_count_old) reward += 20;
+	if(end_position_count_current < end_position_count_old) reward -= 5;
+	if(house_position_count_current > house_position_count_old) reward += 5;
+	if(house_position_count_current < house_position_count_old) reward -= 5;
+	if(home_position_count_current > home_position_count_old) reward - 5;
+	if(home_position_count_current < home_position_count_old) reward += 5;
+
+
+	return reward;
+}
+
+
+void ludo_player_ga::updateQTable(double reward, std::vector<PlayerState> old, std::vector<PlayerState> current){
+
+	double alpha = 0.5;
+	double gamma = 0.9;
+	double oldQValue = q_table[old[0]][old[1]][old[2]][old[3]][oldDecision];
+	double qMax = q_table[current[0]][current[1]][current[2]][current[3]][0];
+	for(int i = 1; i < 4; i++){
+		if(q_table[current[0]][current[1]][current[2]][current[3]][i] > qMax) qMax = q_table[current[0]][current[1]][current[2]][current[3]][i];
+
+	}
+
+	double delta_q_old = alpha * (reward + gamma * qMax - oldQValue);
+
+	q_table[old[0]][old[1]][old[2]][old[3]][oldDecision] = oldQValue + delta_q_old;
+	//std::cout << q_table[old[0]][old[1]][old[2]][old[3]][oldDecision] << std::endl;
+
+}
+
+
+void ludo_player_ga::updateRewardForNextIteration(std::vector<PlayerState> currentState, int decision){
+	if(currentState[decision] == PlayerState::reach_hit ||
+		currentState[decision] == PlayerState::danger_before_move_but_can_reach_hit || 
+		currentState[decision] == PlayerState::danger_before_move_but_can_reach_hit_but_danger_after_move || 
+		currentState[decision] == PlayerState::reach_hit_but_danger_after_move)
+	{
+		rewardForNextIteration = 5; // Hit
+		return;
+	}
+
+	if(currentState[decision] == PlayerState::reach_star ||
+		currentState[decision] == PlayerState::danger_before_move_but_can_reach_star || 
+		currentState[decision] == PlayerState::danger_before_move_but_can_reach_star_but_danger_after_move || 
+		currentState[decision] == PlayerState::reach_star_but_danger_after_move)
+	{
+		rewardForNextIteration = 3; // Star
+		return;
+	}
+
+
+	if(currentState[decision] == PlayerState::reach_star_and_hit ||
+		currentState[decision] == PlayerState::danger_before_move_but_can_reach_star_and_hit || 
+		currentState[decision] == PlayerState::danger_before_but_can_reach_star_and_hit_but_danger_after_move || 
+		currentState[decision] == PlayerState::reach_star_and_hit_but_danger_after_move)
+	{
+		rewardForNextIteration = 7; // Hit & Star
+		return;
+	}
+
+	if(currentState[decision] == PlayerState::reach_globe ||
+		currentState[decision] == PlayerState::danger_before_move_but_can_reach_globe)
+	{
+		rewardForNextIteration = 3;
+		return;
+	}
+
+	if(currentState[decision] == PlayerState::suicide)
+	{
+		rewardForNextIteration = -5;
+		return;
+	}
+
+	rewardForNextIteration = 0;
+
+		
+}
+
 

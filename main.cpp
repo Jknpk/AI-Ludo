@@ -18,9 +18,9 @@ int main(int argc, char *argv[]){
     ludo_player_random p2, p3, p4;
 
     game g;
-    g.setGameDelay(1000); //if you want to see the game, set a delay
+    g.setGameDelay(0); //if you want to see the game, set a delay
 
-    //* Add a GUI <-- remove the '/' to uncomment block
+    /* Add a GUI <-- remove the '/' to uncomment block
     Dialog w;
     QObject::connect(&g,SIGNAL(update_graphics(std::vector<int>)),&w,SLOT(update_graphics(std::vector<int>)));
     QObject::connect(&g,SIGNAL(set_color(int)),                   &w,SLOT(get_color(int)));
@@ -58,5 +58,14 @@ int main(int argc, char *argv[]){
         a.exec();
         g.reset();
     }
+
+    p1.useTrainedQTable = true;
+
+    for(int i = 0; i < 10000; ++i){
+        g.start();
+        a.exec();
+        g.reset();
+    }
+
     return 0;
 }

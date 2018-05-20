@@ -36,6 +36,10 @@ private:
             QThread::msleep(msecs);
         }
     }
+
+    int gamesPlayed = 0;
+    int timesPlayer0Won = 0;   
+
 public:
     int color;
     std::vector<int> player_positions;

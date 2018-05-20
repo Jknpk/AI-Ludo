@@ -243,7 +243,14 @@ void game::turnComplete(bool win){
     game_complete = win;
     turn_complete = true;
     if(game_complete){
-        std::cout << "player: " << color << " won" << std::endl;
+        gamesPlayed++;
+        if(color == 0){
+            timesPlayer0Won ++;
+        }
+        std::cout << "Game " << gamesPlayed << ": player " << color << " won, winning rate of player0: " << ((double)timesPlayer0Won / (double) gamesPlayed)*100 << " prozent" << std::endl;
+
+
+
         emit declare_winner(color);
     }
 }
