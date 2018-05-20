@@ -37,8 +37,7 @@ private:
         }
     }
 
-    int gamesPlayed = 0;
-    int timesPlayer0Won = 0;   
+
 
 public:
     int color;
@@ -51,6 +50,10 @@ public:
     game();
     void setGameDelay(unsigned int mili_seconds){ game_delay = mili_seconds; }
     void reset();
+
+    
+    int gamesPlayed = 0;
+    int timesPlayer0Won = 0;  
 signals:
     void player1_start(positions_and_dice);
     void player2_start(positions_and_dice);
@@ -67,6 +70,7 @@ signals:
     void set_dice_result(int);
     void declare_winner(int);
     void close();
+ 
 
 public slots:
     void turnComplete(bool win);

@@ -12,40 +12,22 @@ private:
 	std::random_device rd;
     std::mt19937 gen;
     int dice_roll;
-	double q_table[22][22][22][22][4];	// define q_table as a 5 dimensional array, first 4 numbers equals to number of states
-	enum PlayerState{home /* done */, safe_on_board, house /* done */, end_position /* done */,
-					 reach_globe /* done */ , reach_star /* done */, reach_hit /* done */, reach_star_and_hit /* done */,  
-					 
-					 suicide, 														// done
-
-					 danger_before_move, 
-					 danger_after_move,
-					 danger_before_move_danger_after_move,
-
-					 danger_before_move_but_can_reach_globe, 						// done
-
-					 danger_before_move_but_can_reach_star,							// done
-					 danger_before_move_but_can_reach_star_but_danger_after_move,	// done
-					 reach_star_but_danger_after_move,								// done
-
-					 danger_before_move_but_can_reach_hit,							// done
-					 danger_before_move_but_can_reach_hit_but_danger_after_move,	// done
-					 reach_hit_but_danger_after_move,								// done
-
-					 danger_before_move_but_can_reach_star_and_hit,					// done
-					 danger_before_but_can_reach_star_and_hit_but_danger_after_move,// done
-					 reach_star_and_hit_but_danger_after_move                       // done
-
-					 //what about reaching an enemy globe after star-travel? let's add it to suicide
-					 //what about reaching a friendly globe after star-travel? Not considered right now..
+	double q_table[5][5][5][5][9];	// define q_table as a 5 dimensional array, first 4 numbers equals to number of states
+	enum PlayerState{
+		home, house, end_position,on_globe, on_board
 	};
-	int make_decision(std::vector<PlayerState> current);
+
+	enum Actions{step_out_of_home, go_into_house, go_to_end_position, kill, move_to_globe, move_to_star, move_to_star_and_kill, suicide, move_normal, nothing_to_do};
+
+
+	int make_decision(std::vector<ludo_player_ga::Actions> possible_actions, std::vector<ludo_player_ga::PlayerState> current);
 	std::vector<PlayerState> measureState(positions_and_dice relative); // returns the indizes of the state we are in
+	std::vector<Actions> measureActions(positions_and_dice relative, std::vector<ludo_player_ga::PlayerState> currentState); // returns the possible actions we can do. 
 	double calculateReward(std::vector<PlayerState> a, std::vector<PlayerState> b); 	// comparing states
 	void updateQTable(double reward, std::vector<PlayerState> old, std::vector<PlayerState> current);
 	std::vector<PlayerState> oldState;
 	
-	void updateRewardForNextIteration(std::vector<PlayerState> currentState, int decision);  
+	void updateRewardForNextIteration(Actions action);  
 
 	void printSummary(positions_and_dice relative);
 	int isStar(int index);
@@ -58,7 +40,7 @@ private:
 	bool isPositionSafe(int isThisPositionSafe, std::vector<int> position);
 
 
-	int oldDecision = 0;
+	Actions oldAction = Actions::move_normal;
 	double rewardForNextIteration = 0;
 public:
     ludo_player_ga();

@@ -20,7 +20,7 @@ int main(int argc, char *argv[]){
     game g;
     g.setGameDelay(0); //if you want to see the game, set a delay
 
-    /* Add a GUI <-- remove the '/' to uncomment block
+    /* //Add a GUI <-- remove the '/' to uncomment block
     Dialog w;
     QObject::connect(&g,SIGNAL(update_graphics(std::vector<int>)),&w,SLOT(update_graphics(std::vector<int>)));
     QObject::connect(&g,SIGNAL(set_color(int)),                   &w,SLOT(get_color(int)));
@@ -53,13 +53,27 @@ int main(int argc, char *argv[]){
     QObject::connect(&g, SIGNAL(player4_end(std::vector<int>)),    &p4,SLOT(post_game_analysis(std::vector<int>)));
     QObject::connect(&p4,SIGNAL(turn_complete(bool)),              &g, SLOT(turnComplete(bool)));
 
-    for(int i = 0; i < 10000; ++i){
+    for(int i = 0; i < 30000; ++i){
         g.start();
         a.exec();
         g.reset();
     }
 
+
+    /*
+    g.setGameDelay(1000);
+    Dialog w;
+    QObject::connect(&g,SIGNAL(update_graphics(std::vector<int>)),&w,SLOT(update_graphics(std::vector<int>)));
+    QObject::connect(&g,SIGNAL(set_color(int)),                   &w,SLOT(get_color(int)));
+    QObject::connect(&g,SIGNAL(set_dice_result(int)),             &w,SLOT(get_dice_result(int)));
+    QObject::connect(&g,SIGNAL(declare_winner(int)),              &w,SLOT(get_winner()));
+    QObject::connect(&g,SIGNAL(close()),&a,SLOT(quit()));
+    w.show();
+    */
+
     p1.useTrainedQTable = true;
+    g.gamesPlayed = 0;
+    g.timesPlayer0Won = 0;
 
     for(int i = 0; i < 10000; ++i){
         g.start();

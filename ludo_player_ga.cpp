@@ -1,5 +1,6 @@
 #include "ludo_player_ga.h"
 #include <random>
+#include <algorithm>
 
 ludo_player_ga::ludo_player_ga():
     pos_start_of_turn(16),
@@ -12,20 +13,90 @@ ludo_player_ga::ludo_player_ga():
 	for(int i = 0; i < 4; i++) oldState.push_back(PlayerState::home); // Initialize oldState with home-positions
 }
 
-int ludo_player_ga::make_decision(std::vector<PlayerState> current){
+int ludo_player_ga::make_decision(std::vector<Actions> possible_actions, std::vector<PlayerState> current){
     if(useTrainedQTable){
+    	/*
     	double qMax = q_table[current[0]][current[1]][current[2]][current[3]][0];
     	int indexOfQMax = 0;
-    	for(int i = 1; i < 4; i++){
+    	for(int i = 1; i < 9; i++){
 			if(q_table[current[0]][current[1]][current[2]][current[3]][i] > qMax){
 			 qMax = q_table[current[0]][current[1]][current[2]][current[3]][i];
 			 indexOfQMax = i;
 			}
 		}
-		return indexOfQMax;
+		*/
+
+		std::vector<double> x; 
+		for(int i = 0; i < 9; i++){
+    		x.push_back(q_table[current[0]][current[1]][current[2]][current[3]][i]);
+    	}
+
+	    //std::vector<int> y;
+
+	    std::vector<int> y(x.size());
+	    std::size_t n(0);
+	    std::generate(std::begin(y), std::end(y), [&]{ return n++; });
+
+	    std::sort(  std::begin(y), std::end(y), [&](double i1, double i2) { return x[i1] > x[i2]; } );
+
+	    for (auto v : y)
+	        std::cout << v << ' ';
+
+	    for(int i = 0; i < 9; i++){
+	    	Actions a = Actions(y[i]);
+
+	    	for(int j = 0; j < 4; j++){
+				if(possible_actions[j]==a){
+
+					return j;
+				}
+			}
+	    }
+
+
+		// = 
+
+		/*
+		Actions a = Actions(indexOfQMax);
+
+		for(int i = 0; i < 4; i++){
+			if(possible_actions[i]==a){
+				return i;
+			}
+		}
+		std::cout << "Can't find it :/" << std::endl;
+		return 0;
+		*/
 
     }
     // else do random action selection
+
+
+    int badmove_counter = 0;
+    for(int i = 0; i < 4; i++){
+    	if(possible_actions[i] == Actions::nothing_to_do){
+    		badmove_counter++;
+    	}
+    }
+
+    if(badmove_counter == 4){
+    	return 0;
+    	std::cout << "Yoooooo" << std::endl;
+    }
+
+    else{
+    	int select;
+    	while(true){
+    		std::uniform_int_distribution<> piece(0, possible_actions.size()-1);
+    		select = piece(gen);
+    		if(possible_actions[select] != Actions::nothing_to_do){
+    			return select;
+    		}
+
+    	}
+    }
+
+    /*
     std::vector<int> valid_moves;
     if(dice_roll == 6){
         for(int i = 0; i < 4; ++i){
@@ -48,7 +119,8 @@ int ludo_player_ga::make_decision(std::vector<PlayerState> current){
     }
     std::uniform_int_distribution<> piece(0, valid_moves.size()-1);
     int select = piece(gen);
-    return valid_moves[select];
+    */
+    return -1;
    
 }
 
@@ -58,14 +130,15 @@ void ludo_player_ga::start_turn(positions_and_dice relative){
 
 	//printSummary(relative);
 	std::vector<ludo_player_ga::PlayerState> currentState = measureState(relative);
+	std::vector<ludo_player_ga::Actions> possible_actions = measureActions(relative, currentState);
 
 	double reward = calculateReward(oldState, currentState);
 	updateQTable(reward, oldState, currentState);
 	
-    int decision = make_decision(currentState); // random if in learning mode
-    updateRewardForNextIteration(currentState, decision);
+    int decision = make_decision(possible_actions, currentState); // random if in learning mode
+    updateRewardForNextIteration(possible_actions[decision]);
 
-    oldDecision = decision;
+    oldAction = possible_actions[decision];
     oldState = currentState;
     emit select_piece(decision);
 }
@@ -75,11 +148,30 @@ std::vector<ludo_player_ga::PlayerState> ludo_player_ga::measureState(positions_
 	std::vector<ludo_player_ga::PlayerState> currentState;
 
 	std::vector<int> position = relative.pos;
-	int dice = relative.dice;
+	//int dice = relative.dice;
+
 
 
 	for(int i = 0; i < 4; i++){ // For all own players, calculate PlayerState
+		// home position
+		if(position[i] == -1) { currentState.push_back(PlayerState::home); continue; } 
 
+		// house position
+		if(position[i] >=52 && position[i] <=56) { currentState.push_back(PlayerState::house); continue; }
+
+		// end_position
+		if(position[i] == 99) { currentState.push_back(PlayerState::end_position); continue; }
+
+		// on_globe
+		if(isGlobe(position[i], position) || (isOccupied(position[i], position) > 1)) { currentState.push_back(PlayerState::on_globe); continue; }
+
+		// on_board
+
+		currentState.push_back(PlayerState::on_board); 
+
+
+
+/*
 		// Stuck in home position 
 		if(dice != 6 && position[i] < 0) { currentState.push_back(PlayerState::home); continue;} 
 
@@ -210,9 +302,10 @@ std::vector<ludo_player_ga::PlayerState> ludo_player_ga::measureState(positions_
 
 		//std::cout << rules.isStar(dice);
 
+*/
 	}
-
 /*
+
 	std::cout << "CurrentState: ";  
 	for(unsigned int i = 0; i < currentState.size(); ++i){
     	std::cout << currentState[i] << " " ;    
@@ -220,6 +313,97 @@ std::vector<ludo_player_ga::PlayerState> ludo_player_ga::measureState(positions_
 	std::cout << " End CurrentState" << std::endl;
 */
 	return currentState;
+}
+
+
+std::vector<ludo_player_ga::Actions> ludo_player_ga::measureActions(positions_and_dice relative, std::vector<ludo_player_ga::PlayerState> currentState){
+
+	std::vector<ludo_player_ga::Actions> possible_actions;
+
+	std::vector<int> position = relative.pos;
+
+	int dice = relative.dice;
+
+
+	for(int i = 0; i < 4; i++){
+		if(currentState[i] == PlayerState::home){
+			if(dice == 6){
+				possible_actions.push_back(Actions::step_out_of_home);
+				continue;
+			}else{
+				possible_actions.push_back(Actions::nothing_to_do);
+				continue;
+			}
+		}
+
+		if(currentState[i] == PlayerState::end_position){
+			possible_actions.push_back(Actions::nothing_to_do);
+			continue;
+		}
+
+		if(currentState[i] == PlayerState::house){
+			if(position[i] + dice == 57){
+				possible_actions.push_back(Actions::go_to_end_position);
+				continue;
+			} else{
+				possible_actions.push_back(Actions::move_normal);	// Improvable, 
+				continue;
+			}
+		}
+
+		if(currentState[i] == PlayerState::on_globe || currentState[i] == PlayerState::on_board){
+			//, go_to_end_position, go_into_house,kill, move_to_globe, move_to_star, move_to_star_and_kill, suicide, move_normal
+			
+			if(position[i] + dice > 51){ // go into house
+				if(position[i] + dice == 57){
+					possible_actions.push_back(Actions::go_to_end_position);
+					continue;	
+				}else{
+					possible_actions.push_back(Actions::go_into_house);
+					continue;	
+				}				
+			}
+			if(isOccupiedByEnemy(position[i]+dice, position)){
+				if(isOccupied(position[i] + dice, position) > 1 || isGlobe(position[i] + dice, position)){
+					possible_actions.push_back(Actions::suicide);
+					continue;
+				}else{
+					possible_actions.push_back(Actions::kill);
+					continue;
+				}
+			}	
+
+			if(isStar(position[i]+dice) > 0){
+				if(isOccupiedByEnemy(isStar(position[i]+dice) + dice + position[i], position)){
+					if(isOccupied(position[i] + dice, position) > 1 || isGlobe(position[i] + dice, position)){
+						possible_actions.push_back(Actions::suicide);
+						continue;
+					}else{
+						possible_actions.push_back(Actions::move_to_star_and_kill);
+						continue;
+					}
+				}else{
+					possible_actions.push_back(Actions::move_to_star);
+					continue;
+				}
+			}
+
+			if(isGlobe(position[i]+dice, position) || isOccupiedByTeammate(position[i]+dice, position)){
+				possible_actions.push_back(Actions::move_to_globe);
+				continue;
+			}
+
+			possible_actions.push_back(Actions::move_normal);
+		}
+	}
+/*
+	std::cout << "possible_actions: ";  
+	for(unsigned int i = 0; i < possible_actions.size(); ++i){
+    	std::cout << possible_actions[i] << " " ;    
+	}
+	std::cout << " end possible_actions" << std::endl;
+	*/
+	return possible_actions;
 }
 
 
@@ -244,6 +428,16 @@ void ludo_player_ga::post_game_analysis(std::vector<int> relative_pos){
             game_complete = false;
         }
     }
+
+    if(game_complete){
+    	positions_and_dice relative;
+    	relative.pos = relative_pos;
+    	relative.dice = 0;
+    	std::vector<ludo_player_ga::PlayerState> currentState = measureState(relative);
+    	double reward = calculateReward(oldState, currentState);
+		updateQTable(reward, oldState, currentState);
+
+    }
     emit turn_complete(game_complete);
 }
 
@@ -266,7 +460,7 @@ int ludo_player_ga::isOccupied(int index, std::vector<int> position){ //returns 
 
 bool ludo_player_ga::isGlobe(int index, std::vector<int> position){
     if(index < 52){     //check only the indexes on the board, not in the home streak
-        if(index % 13 == 0 || (index - 8) % 13 == 0 || isOccupied(index, position) > 1){  //if more people of the same team stand on the same spot it counts as globe
+        if(index % 13 == 0 || (index - 8) % 13 == 0){  // Checks just the globe-positions and home-positions
             return true;
         }
     }
@@ -361,100 +555,76 @@ bool ludo_player_ga::isPositionSafe(int isThisPositionSafe, std::vector<int> pos
 
 
 
-double ludo_player_ga::calculateReward(std::vector<PlayerState> old, std::vector<PlayerState> current){
+double ludo_player_ga::calculateReward(std::vector<ludo_player_ga::PlayerState> old, std::vector<ludo_player_ga::PlayerState> current){
 	double reward = rewardForNextIteration;
-	int end_position_count_old = 0;
-	int end_position_count_current = 0;
-	int house_position_count_old = 0;
-	int house_position_count_current = 0;
-	int home_position_count_old = 0;
-	int home_position_count_current = 0;
+	
+	int endPositions;
 	for(int i = 0; i < 4; i++){
-		if(old[i] == PlayerState::end_position) end_position_count_old ++;
-		if(old[i] == PlayerState::house) house_position_count_old ++;
-		if(old[i] == PlayerState::home) home_position_count_old ++;
-
-		if(current[i] == PlayerState::end_position) end_position_count_current ++;
-		if(current[i] == PlayerState::house) house_position_count_current ++;
-		if(current[i] == PlayerState::home) home_position_count_current ++;
+		if(old[i] == PlayerState::on_board && current[i] == PlayerState::home){
+			// Someone killed our player
+			reward -= 5;
+		}
+		if(current[i] == PlayerState::end_position) endPositions++;
 	}
 
-	if(end_position_count_current > end_position_count_old) reward += 20;
-	if(end_position_count_current < end_position_count_old) reward -= 5;
-	if(house_position_count_current > house_position_count_old) reward += 5;
-	if(house_position_count_current < house_position_count_old) reward -= 5;
-	if(home_position_count_current > home_position_count_old) reward - 5;
-	if(home_position_count_current < home_position_count_old) reward += 5;
+	if(endPositions == 4){
+		reward += 100;
+		std::cout << "WOOOON" << std::endl;
+		//exit(0);
+	}
+
 
 
 	return reward;
 }
 
 
-void ludo_player_ga::updateQTable(double reward, std::vector<PlayerState> old, std::vector<PlayerState> current){
+void ludo_player_ga::updateQTable(double reward, std::vector<ludo_player_ga::PlayerState> old, std::vector<ludo_player_ga::PlayerState> current){
 
 	double alpha = 0.5;
 	double gamma = 0.9;
-	double oldQValue = q_table[old[0]][old[1]][old[2]][old[3]][oldDecision];
+	double oldQValue = q_table[old[0]][old[1]][old[2]][old[3]][oldAction];
 	double qMax = q_table[current[0]][current[1]][current[2]][current[3]][0];
-	for(int i = 1; i < 4; i++){
+	for(int i = 1; i < 9; i++){
 		if(q_table[current[0]][current[1]][current[2]][current[3]][i] > qMax) qMax = q_table[current[0]][current[1]][current[2]][current[3]][i];
 
 	}
 
 	double delta_q_old = alpha * (reward + gamma * qMax - oldQValue);
 
-	q_table[old[0]][old[1]][old[2]][old[3]][oldDecision] = oldQValue + delta_q_old;
-	//std::cout << q_table[old[0]][old[1]][old[2]][old[3]][oldDecision] << std::endl;
+	q_table[old[0]][old[1]][old[2]][old[3]][oldAction] = oldQValue + delta_q_old;
+	std::cout << q_table[old[0]][old[1]][old[2]][old[3]][oldAction] << std::endl;
 
 }
 
 
-void ludo_player_ga::updateRewardForNextIteration(std::vector<PlayerState> currentState, int decision){
-	if(currentState[decision] == PlayerState::reach_hit ||
-		currentState[decision] == PlayerState::danger_before_move_but_can_reach_hit || 
-		currentState[decision] == PlayerState::danger_before_move_but_can_reach_hit_but_danger_after_move || 
-		currentState[decision] == PlayerState::reach_hit_but_danger_after_move)
-	{
-		rewardForNextIteration = 5; // Hit
-		return;
-	}
-
-	if(currentState[decision] == PlayerState::reach_star ||
-		currentState[decision] == PlayerState::danger_before_move_but_can_reach_star || 
-		currentState[decision] == PlayerState::danger_before_move_but_can_reach_star_but_danger_after_move || 
-		currentState[decision] == PlayerState::reach_star_but_danger_after_move)
-	{
-		rewardForNextIteration = 3; // Star
-		return;
-	}
-
-
-	if(currentState[decision] == PlayerState::reach_star_and_hit ||
-		currentState[decision] == PlayerState::danger_before_move_but_can_reach_star_and_hit || 
-		currentState[decision] == PlayerState::danger_before_but_can_reach_star_and_hit_but_danger_after_move || 
-		currentState[decision] == PlayerState::reach_star_and_hit_but_danger_after_move)
-	{
-		rewardForNextIteration = 7; // Hit & Star
-		return;
-	}
-
-	if(currentState[decision] == PlayerState::reach_globe ||
-		currentState[decision] == PlayerState::danger_before_move_but_can_reach_globe)
-	{
-		rewardForNextIteration = 3;
-		return;
-	}
-
-	if(currentState[decision] == PlayerState::suicide)
-	{
-		rewardForNextIteration = -5;
-		return;
-	}
-
-	rewardForNextIteration = 0;
-
-		
+void ludo_player_ga::updateRewardForNextIteration(Actions action){
+	switch(action){
+		case Actions::kill:
+			rewardForNextIteration = 2;
+			break;
+		case Actions::step_out_of_home:
+			rewardForNextIteration = 2;
+			break;
+		case Actions::go_into_house:
+			rewardForNextIteration = 2;
+			break;
+		case Actions::go_to_end_position:
+			rewardForNextIteration = 5;
+			break;
+		case Actions::move_to_star_and_kill:
+			rewardForNextIteration = 3;
+			break;
+		case Actions::move_to_star:
+			rewardForNextIteration = 1;
+			break;
+		case Actions::suicide:
+			rewardForNextIteration = -10;
+			break;
+		case Actions::move_to_globe:
+			rewardForNextIteration = 1;
+			break;
+		default:
+			rewardForNextIteration = 0; 
+	}		
 }
-
-
