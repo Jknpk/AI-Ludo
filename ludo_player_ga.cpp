@@ -15,23 +15,11 @@ ludo_player_ga::ludo_player_ga():
 
 int ludo_player_ga::make_decision(std::vector<Actions> possible_actions, std::vector<PlayerState> current){
     if(useTrainedQTable){
-    	/*
-    	double qMax = q_table[current[0]][current[1]][current[2]][current[3]][0];
-    	int indexOfQMax = 0;
-    	for(int i = 1; i < 9; i++){
-			if(q_table[current[0]][current[1]][current[2]][current[3]][i] > qMax){
-			 qMax = q_table[current[0]][current[1]][current[2]][current[3]][i];
-			 indexOfQMax = i;
-			}
-		}
-		*/
 
 		std::vector<double> x; 
 		for(int i = 0; i < 9; i++){
     		x.push_back(q_table[current[0]][current[1]][current[2]][current[3]][i]);
     	}
-
-	    //std::vector<int> y;
 
 	    std::vector<int> y(x.size());
 	    std::size_t n(0);
@@ -52,23 +40,8 @@ int ludo_player_ga::make_decision(std::vector<Actions> possible_actions, std::ve
 				}
 			}
 	    }
-
-
-		// = 
-
-		/*
-		Actions a = Actions(indexOfQMax);
-
-		for(int i = 0; i < 4; i++){
-			if(possible_actions[i]==a){
-				return i;
-			}
-		}
-		std::cout << "Can't find it :/" << std::endl;
-		return 0;
-		*/
-
     }
+
     // else do random action selection
 
 
@@ -96,30 +69,6 @@ int ludo_player_ga::make_decision(std::vector<Actions> possible_actions, std::ve
     	}
     }
 
-    /*
-    std::vector<int> valid_moves;
-    if(dice_roll == 6){
-        for(int i = 0; i < 4; ++i){
-            if(pos_start_of_turn[i]<0){
-                valid_moves.push_back(i);
-            }
-        }
-    }
-    for(int i = 0; i < 4; ++i){
-        if(pos_start_of_turn[i]>=0 && pos_start_of_turn[i] != 99){
-            valid_moves.push_back(i);
-        }
-    }
-    if(valid_moves.size()==0){
-        for(int i = 0; i < 4; ++i){
-            if(pos_start_of_turn[i] != 99){
-                valid_moves.push_back(i);
-            }
-        }
-    }
-    std::uniform_int_distribution<> piece(0, valid_moves.size()-1);
-    int select = piece(gen);
-    */
     return -1;
    
 }
@@ -562,7 +511,7 @@ double ludo_player_ga::calculateReward(std::vector<ludo_player_ga::PlayerState> 
 	for(int i = 0; i < 4; i++){
 		if(old[i] == PlayerState::on_board && current[i] == PlayerState::home){
 			// Someone killed our player
-			reward -= 5;
+			reward -= 10;
 		}
 		if(current[i] == PlayerState::end_position) endPositions++;
 	}
@@ -601,25 +550,25 @@ void ludo_player_ga::updateQTable(double reward, std::vector<ludo_player_ga::Pla
 void ludo_player_ga::updateRewardForNextIteration(Actions action){
 	switch(action){
 		case Actions::kill:
-			rewardForNextIteration = 5;
+			rewardForNextIteration = 10;
 			break;
 		case Actions::step_out_of_home:
 			rewardForNextIteration = 20;
 			break;
 		case Actions::go_into_house:
-			rewardForNextIteration = 10;
+			rewardForNextIteration = 20;
 			break;
 		case Actions::go_to_end_position:
 			rewardForNextIteration = 20;
 			break;
 		case Actions::move_to_star_and_kill:
-			rewardForNextIteration = 8;
+			rewardForNextIteration = 10;
 			break;
 		case Actions::move_to_star:
 			rewardForNextIteration = 5;
 			break;
 		case Actions::suicide:
-			rewardForNextIteration = -20;
+			rewardForNextIteration = -25;
 			break;
 		case Actions::move_to_globe:
 			rewardForNextIteration = 3;
