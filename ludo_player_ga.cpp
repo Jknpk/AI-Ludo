@@ -531,7 +531,7 @@ double ludo_player_ga::calculateReward(std::vector<ludo_player_ga::PlayerState> 
 void ludo_player_ga::updateQTable(double reward, std::vector<ludo_player_ga::PlayerState> old, std::vector<ludo_player_ga::PlayerState> current){
 
 	double alpha = 0.5;
-	double gamma = 0.9;
+	double gamma = 0.85;
 	double oldQValue = q_table[old[0]][old[1]][old[2]][old[3]][oldAction];
 	double qMax = q_table[current[0]][current[1]][current[2]][current[3]][0];
 	for(int i = 1; i < 9; i++){
