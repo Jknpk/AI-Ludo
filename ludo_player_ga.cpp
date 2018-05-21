@@ -601,28 +601,28 @@ void ludo_player_ga::updateQTable(double reward, std::vector<ludo_player_ga::Pla
 void ludo_player_ga::updateRewardForNextIteration(Actions action){
 	switch(action){
 		case Actions::kill:
-			rewardForNextIteration = 2;
-			break;
-		case Actions::step_out_of_home:
-			rewardForNextIteration = 2;
-			break;
-		case Actions::go_into_house:
-			rewardForNextIteration = 2;
-			break;
-		case Actions::go_to_end_position:
 			rewardForNextIteration = 5;
 			break;
+		case Actions::step_out_of_home:
+			rewardForNextIteration = 20;
+			break;
+		case Actions::go_into_house:
+			rewardForNextIteration = 10;
+			break;
+		case Actions::go_to_end_position:
+			rewardForNextIteration = 20;
+			break;
 		case Actions::move_to_star_and_kill:
-			rewardForNextIteration = 3;
+			rewardForNextIteration = 8;
 			break;
 		case Actions::move_to_star:
-			rewardForNextIteration = 1;
+			rewardForNextIteration = 5;
 			break;
 		case Actions::suicide:
-			rewardForNextIteration = -10;
+			rewardForNextIteration = -20;
 			break;
 		case Actions::move_to_globe:
-			rewardForNextIteration = 1;
+			rewardForNextIteration = 3;
 			break;
 		default:
 			rewardForNextIteration = 0; 
