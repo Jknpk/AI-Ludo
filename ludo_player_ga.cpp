@@ -559,7 +559,7 @@ void ludo_player_ga::updateRewardForNextIteration(Actions action){
 			rewardForNextIteration = 20;
 			break;
 		case Actions::go_to_end_position:
-			rewardForNextIteration = 20;
+			rewardForNextIteration = 10;
 			break;
 		case Actions::move_to_star_and_kill:
 			rewardForNextIteration = 10;
