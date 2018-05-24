@@ -12,7 +12,7 @@ private:
 	std::random_device rd;
     std::mt19937 gen;
     int dice_roll;
-	double q_table[5][5][5][5][9];	// define q_table as a 5 dimensional array, first 4 numbers equals to number of states
+	double q_table[5][5][5][5][10];	// define q_table as a 5 dimensional array, first 4 numbers equals to number of states
 	enum PlayerState{
 		home, house, end_position,on_globe, on_board
 	};
@@ -24,7 +24,7 @@ private:
 	std::vector<PlayerState> measureState(positions_and_dice relative); // returns the indizes of the state we are in
 	std::vector<Actions> measureActions(positions_and_dice relative, std::vector<ludo_player_ga::PlayerState> currentState); // returns the possible actions we can do. 
 	double calculateReward(std::vector<PlayerState> a, std::vector<PlayerState> b); 	// comparing states
-	void updateQTable(double reward, std::vector<PlayerState> old, std::vector<PlayerState> current);
+	void updateQTable(double reward, std::vector<PlayerState> old, std::vector<PlayerState> current, std::vector<Actions> possible_actions);
 	std::vector<PlayerState> oldState;
 	
 	void updateRewardForNextIteration(Actions action);  

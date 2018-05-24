@@ -15,7 +15,7 @@ int main(int argc, char *argv[]){
 
     //instanciate the players here
     ludo_player_ga p1;
-    ludo_player_random p2, p3, p4;
+    ludo_player p2, p3, p4;
 
     game g;
     g.setGameDelay(0); //if you want to see the game, set a delay
@@ -53,7 +53,7 @@ int main(int argc, char *argv[]){
     QObject::connect(&g, SIGNAL(player4_end(std::vector<int>)),    &p4,SLOT(post_game_analysis(std::vector<int>)));
     QObject::connect(&p4,SIGNAL(turn_complete(bool)),              &g, SLOT(turnComplete(bool)));
 
-    for(int i = 0; i < 30000; ++i){
+    for(int i = 0; i < 10000; ++i){
         g.start();
         a.exec();
         g.reset();
@@ -80,6 +80,17 @@ int main(int argc, char *argv[]){
         a.exec();
         g.reset();
     }
+
+
+    g.gamesPlayed = 0;
+    g.timesPlayer0Won = 0;
+
+    for(int i = 0; i < 1000; ++i){
+        g.start();
+        a.exec();
+        g.reset();
+    }
+    std::cout << "Final learning rate" << std::endl;
 
     return 0;
 }

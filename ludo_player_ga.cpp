@@ -27,10 +27,10 @@ int ludo_player_ga::make_decision(std::vector<Actions> possible_actions, std::ve
 
 	    std::sort(  std::begin(y), std::end(y), [&](double i1, double i2) { return x[i1] > x[i2]; } );
 
-	    for (auto v : y)
-	        std::cout << v << ' ';
+	    //for (auto v : y)
+	    //    std::cout << v << ' ';
 
-	    for(int i = 0; i < 9; i++){
+	    for(int i = 0; i < 10; i++){
 	    	Actions a = Actions(y[i]);
 
 	    	for(int j = 0; j < 4; j++){
@@ -82,7 +82,7 @@ void ludo_player_ga::start_turn(positions_and_dice relative){
 	std::vector<ludo_player_ga::Actions> possible_actions = measureActions(relative, currentState);
 
 	double reward = calculateReward(oldState, currentState);
-	updateQTable(reward, oldState, currentState);
+	updateQTable(reward, oldState, currentState, possible_actions);
 	
     int decision = make_decision(possible_actions, currentState); // random if in learning mode
     updateRewardForNextIteration(possible_actions[decision]);
@@ -119,139 +119,6 @@ std::vector<ludo_player_ga::PlayerState> ludo_player_ga::measureState(positions_
 		currentState.push_back(PlayerState::on_board); 
 
 
-
-/*
-		// Stuck in home position 
-		if(dice != 6 && position[i] < 0) { currentState.push_back(PlayerState::home); continue;} 
-
-		// reach or stay in final position  
-		if(position[i]+dice ==57 || position[i]==99) { currentState.push_back(PlayerState::end_position); continue;} 
-		
-		// house position
-		if((position[i]+dice >=52 && position[i]+dice <=56) || position[i]+dice > 57) { currentState.push_back(PlayerState::house); continue;} 
-		
-
-		// checking for globes
-
-		// checking for enemy-globe aka suicide
-		if((position[i] == -1 && dice == 6 && isOccupiedByEnemy(0, position)) ||
-			(isGlobe(position[i]+dice, position) && isOccupiedByEnemy(position[i]+dice, position)))
-		{
-			currentState.push_back(PlayerState::suicide); 
-			continue;
-		}
-			  
-			
-
-		// danger_before_move_but_can_reach_globe
-		if((isGlobe(position[i]+dice, position) && !isOccupiedByEnemy(position[i]+dice, position)) && !isPositionSafe(position[i], position)|| // A globe that is not occupied by an enemy
-		    isOccupiedByTeammate(position[i]+dice,position) && !isPositionSafe(position[i], position)) // Make it a globe)
-		{
-			currentState.push_back(PlayerState::danger_before_move_but_can_reach_globe); 
-			continue;  
-		}
-
-		// reach_globe (no danger)
-		if((position[i] == -1 && dice == 6) || // In home position and want to get out with a 6
-		   (isGlobe(position[i]+dice, position) && !isOccupiedByEnemy(position[i]+dice, position)) || // A globe that is not occupied by an enemy
-		    isOccupiedByTeammate(position[i]+dice,position)) // Make it a globe
-		{
-			currentState.push_back(PlayerState::reach_globe); 
-			continue;  
-		}
-
-
-		// checking for stars
-
-		if(isStar(position[i]+ dice) != 0){
-			bool isPositionBeforeMoveSafe = isPositionSafe(position[i], position);
-			bool isPositionAfterMoveSafe = isPositionSafe(position[i]+dice, position);
-
-			if(!isPositionBeforeMoveSafe && !isPositionAfterMoveSafe){
-				currentState.push_back(PlayerState::danger_before_move_but_can_reach_star_but_danger_after_move); 
-				continue;
-			}
-			if(!isPositionBeforeMoveSafe){
-				currentState.push_back(PlayerState::danger_before_move_but_can_reach_star); 
-				continue;
-			}
-			if(!isPositionAfterMoveSafe){
-				currentState.push_back(PlayerState::reach_star_but_danger_after_move); 
-				continue;
-			}
-			currentState.push_back(PlayerState::reach_star); 
-			continue;
-		}
-
-
-		// checking for hits
-		if(isOccupiedByEnemy(position[i]+ dice, position)){
-			bool isPositionBeforeMoveSafe = isPositionSafe(position[i], position);
-			bool isPositionAfterMoveSafe = isPositionSafe(position[i]+dice, position);
-
-			if(!isPositionBeforeMoveSafe && !isPositionAfterMoveSafe){
-				currentState.push_back(PlayerState::danger_before_move_but_can_reach_hit_but_danger_after_move); 
-				continue;
-			}
-			if(!isPositionBeforeMoveSafe){
-				currentState.push_back(PlayerState::danger_before_move_but_can_reach_hit); 
-				continue;
-			}
-			if(!isPositionAfterMoveSafe){
-				currentState.push_back(PlayerState::reach_hit_but_danger_after_move); 
-				continue;
-			}
-			currentState.push_back(PlayerState::reach_hit); 
-			continue;
-		}
-
-		// checking for star & hits at once
-		if(isStar(position[i]+ dice) != 0 && isOccupiedByEnemy(position[i]+ dice + isStar(position[i]+ dice), position)){
-			bool isPositionBeforeMoveSafe = isPositionSafe(position[i], position);
-			bool isPositionAfterMoveSafe = isPositionSafe(position[i]+dice, position);
-
-			if(!isPositionBeforeMoveSafe && !isPositionAfterMoveSafe){
-				currentState.push_back(PlayerState::danger_before_but_can_reach_star_and_hit_but_danger_after_move); 
-				continue;
-			}
-			if(!isPositionBeforeMoveSafe){
-				currentState.push_back(PlayerState::danger_before_move_but_can_reach_star_and_hit); 
-				continue;
-			}
-			if(!isPositionAfterMoveSafe){
-				currentState.push_back(PlayerState::reach_star_and_hit_but_danger_after_move); 
-				continue;
-			}
-			currentState.push_back(PlayerState::reach_star_and_hit); 
-			continue;
-		}
-
-
-		// executing a normal turn
-
-
-		bool isPositionBeforeMoveSafe = isPositionSafe(position[i], position);
-		bool isPositionAfterMoveSafe = isPositionSafe(position[i]+dice, position);
-
-		if(!isPositionBeforeMoveSafe && !isPositionAfterMoveSafe){
-			currentState.push_back(PlayerState::danger_before_move_danger_after_move); 
-			continue;
-		}
-		if(!isPositionBeforeMoveSafe){
-			currentState.push_back(PlayerState::danger_before_move); 
-			continue;
-		}
-		if(!isPositionAfterMoveSafe){
-			currentState.push_back(PlayerState::danger_after_move); 
-			continue;
-		}
-		currentState.push_back(PlayerState::safe_on_board); 
-		continue;
-
-
-		//std::cout << rules.isStar(dice);
-
-*/
 	}
 /*
 
@@ -384,7 +251,12 @@ void ludo_player_ga::post_game_analysis(std::vector<int> relative_pos){
     	relative.dice = 0;
     	std::vector<ludo_player_ga::PlayerState> currentState = measureState(relative);
     	double reward = calculateReward(oldState, currentState);
-		updateQTable(reward, oldState, currentState);
+
+    	std::vector<Actions> possible_actions_after_win;
+    	for(int i = 0; i < 4; i++){
+    		possible_actions_after_win.push_back(Actions::nothing_to_do);
+    	}
+		updateQTable(reward, oldState, currentState, possible_actions_after_win);
 
     }
     emit turn_complete(game_complete);
@@ -528,21 +400,48 @@ double ludo_player_ga::calculateReward(std::vector<ludo_player_ga::PlayerState> 
 }
 
 
-void ludo_player_ga::updateQTable(double reward, std::vector<ludo_player_ga::PlayerState> old, std::vector<ludo_player_ga::PlayerState> current){
+void ludo_player_ga::updateQTable(double reward, std::vector<ludo_player_ga::PlayerState> old, std::vector<ludo_player_ga::PlayerState> current, std::vector<Actions> possible_actions){
 
 	double alpha = 0.5;
 	double gamma = 0.8;
 	double oldQValue = q_table[old[0]][old[1]][old[2]][old[3]][oldAction];
-	double qMax = q_table[current[0]][current[1]][current[2]][current[3]][0];
-	for(int i = 1; i < 9; i++){
-		if(q_table[current[0]][current[1]][current[2]][current[3]][i] > qMax) qMax = q_table[current[0]][current[1]][current[2]][current[3]][i];
-
+	//double qMax = q_table[current[0]][current[1]][current[2]][current[3]][0];
+	//for(int i = 1; i < 9; i++){
+	//	if(q_table[current[0]][current[1]][current[2]][current[3]][i] > qMax) qMax = q_table[current[0]][current[1]][current[2]][current[3]][i];
+	//}
+	int indexOfMaxQ;
+	std::vector<double> x; 
+	for(int i = 0; i < 9; i++){
+		x.push_back(q_table[current[0]][current[1]][current[2]][current[3]][i]);
 	}
 
+    std::vector<int> y(x.size());
+    std::size_t n(0);
+    std::generate(std::begin(y), std::end(y), [&]{ return n++; });
+
+    std::sort(  std::begin(y), std::end(y), [&](double i1, double i2) { return x[i1] > x[i2]; } );
+
+    //for (auto v : y)
+    //    std::cout << v << ' ';
+
+    for(int i = 0; i < 9; i++){
+    	Actions a = Actions(y[i]);
+
+    	for(int j = 0; j < 4; j++){
+			if(possible_actions[j]==a){
+				indexOfMaxQ = a;
+				goto b;
+			}
+		}
+	}
+
+	b:
+
+	double qMax = q_table[current[0]][current[1]][current[2]][current[3]][indexOfMaxQ];
 	double delta_q_old = alpha * (reward + gamma * qMax - oldQValue);
 
 	q_table[old[0]][old[1]][old[2]][old[3]][oldAction] = oldQValue + delta_q_old;
-	std::cout << q_table[old[0]][old[1]][old[2]][old[3]][oldAction] << std::endl;
+	// std::cout << q_table[old[0]][old[1]][old[2]][old[3]][oldAction] << std::endl;
 
 }
 
