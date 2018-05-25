@@ -45,6 +45,7 @@ private:
 public:
     ludo_player_ga();
     bool useTrainedQTable = false;
+    void printQTable();
 signals:
     void select_piece(int);
     void turn_complete(bool);

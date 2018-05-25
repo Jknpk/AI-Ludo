@@ -78,13 +78,15 @@ void ludo_player_ga::start_turn(positions_and_dice relative){
     dice_roll = relative.dice;
 
 	//printSummary(relative);
+
+
 	std::vector<ludo_player_ga::PlayerState> currentState = measureState(relative);
 	std::vector<ludo_player_ga::Actions> possible_actions = measureActions(relative, currentState);
 
 	double reward = calculateReward(oldState, currentState);
 	updateQTable(reward, oldState, currentState, possible_actions);
 	
-    int decision = make_decision(possible_actions, currentState); // random if in learning mode
+    int decision = make_decision(possible_actions, currentState); 
     updateRewardForNextIteration(possible_actions[decision]);
 
     oldAction = possible_actions[decision];
@@ -405,11 +407,12 @@ void ludo_player_ga::updateQTable(double reward, std::vector<ludo_player_ga::Pla
 	double alpha = 0.5;
 	double gamma = 0.8;
 	double oldQValue = q_table[old[0]][old[1]][old[2]][old[3]][oldAction];
+
 	//double qMax = q_table[current[0]][current[1]][current[2]][current[3]][0];
 	//for(int i = 1; i < 9; i++){
 	//	if(q_table[current[0]][current[1]][current[2]][current[3]][i] > qMax) qMax = q_table[current[0]][current[1]][current[2]][current[3]][i];
 	//}
-	int indexOfMaxQ;
+	int indexOfMaxQ;	
 	std::vector<double> x; 
 	for(int i = 0; i < 9; i++){
 		x.push_back(q_table[current[0]][current[1]][current[2]][current[3]][i]);
@@ -438,6 +441,7 @@ void ludo_player_ga::updateQTable(double reward, std::vector<ludo_player_ga::Pla
 	b:
 
 	double qMax = q_table[current[0]][current[1]][current[2]][current[3]][indexOfMaxQ];
+
 	double delta_q_old = alpha * (reward + gamma * qMax - oldQValue);
 
 	q_table[old[0]][old[1]][old[2]][old[3]][oldAction] = oldQValue + delta_q_old;
@@ -448,6 +452,7 @@ void ludo_player_ga::updateQTable(double reward, std::vector<ludo_player_ga::Pla
 
 void ludo_player_ga::updateRewardForNextIteration(Actions action){
 	switch(action){
+		
 		case Actions::kill:
 			rewardForNextIteration = 10;
 			break;
@@ -461,10 +466,10 @@ void ludo_player_ga::updateRewardForNextIteration(Actions action){
 			rewardForNextIteration = 10;
 			break;
 		case Actions::move_to_star_and_kill:
-			rewardForNextIteration = 10;
+			rewardForNextIteration = 12;
 			break;
 		case Actions::move_to_star:
-			rewardForNextIteration = 5;
+			rewardForNextIteration = 10;
 			break;
 		case Actions::suicide:
 			rewardForNextIteration = -25;
@@ -472,7 +477,29 @@ void ludo_player_ga::updateRewardForNextIteration(Actions action){
 		case Actions::move_to_globe:
 			rewardForNextIteration = 3;
 			break;
+		case Actions::move_normal:
+			rewardForNextIteration = 0; 
 		default:
 			rewardForNextIteration = 0; 
 	}		
+}
+
+
+void ludo_player_ga::printQTable(){
+	for(int a = 0; a < 5; a++){
+		for (int b = 0; b < 5; b++){
+			for(int c = 0; c < 5; c++){
+				for(int d = 0; d < 5; d++){
+					for(int i = 0; i < 10; i++){
+						std::cout << q_table[a][b][c][d][i] << "\t";
+					}
+					std::cout << " " << std::endl;
+				}
+			}
+		}
+	}
+
+
+	
+
 }
