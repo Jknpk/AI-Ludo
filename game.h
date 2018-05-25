@@ -53,7 +53,8 @@ public:
 
     
     int gamesPlayed = 0;
-    int timesPlayer0Won = 0;  
+    int timesPlayer1Won = 0;  
+    int timesPlayer3Won = 0;  
 signals:
     void player1_start(positions_and_dice);
     void player2_start(positions_and_dice);
